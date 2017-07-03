@@ -6,8 +6,15 @@ Based on FFmpeg 2.7
 1.VideoRemuxer
 
 	Description:
-		Add the specified audio to the video
+		Add the specified audio to the video.
 	files:
-		src/video_merge_audio.h
-		src/video_merge_audio.cpp
+		src/VideoRemuxer.h
+		src/VideoRemuxer.cpp
 
+2.VideoFileRemuxer
+
+	Description:
+		Synthesize multiple video files into one video file.
+	files:
+		src/VideoFileMerge.h
+		src/VideoFileMerge.cpp

@@ -1,4 +1,4 @@
-﻿#include "video_merge_audio.h"
+﻿#include "VideoRemuxer.h"
 
 
 bool VideoRemuxerEncode(string &video_name, string &audio_name, int offset, string &output_video_name)
