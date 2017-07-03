@@ -19,7 +19,7 @@ Based on FFmpeg 2.7
 		src/VideoFileMerge.h
 		src/VideoFileMerge.cpp
 
-2.VideoFileCut
+3.VideoFileCut
 
 	Description:
 		Clips from the original video file within a piece of content to generate a new file.
