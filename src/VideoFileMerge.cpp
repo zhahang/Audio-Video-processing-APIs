@@ -204,6 +204,8 @@ bool VideoFileMerge(std::vector<std::string> &input_filename_list, std::vector<i
 
 		if (packet.stream_index == videoStreamIndex)
 		{
+			if(video_frame_count == 0 && packet.dst < 0)
+				packet.dst = 0;
 			packet.pts += base_pts_video;
 			packet.dts += base_pts_video;
 			video_frame_count++;
