@@ -10,7 +10,7 @@ bool VideoFileMerge(std::vector<std::string> &input_filename_list, std::vector<i
 
 	// 2. init encoder...
 	AVFormatContext  *pFormatCtxE;
-	AVStream         *pStreamE;
+// 	AVStream         *pStreamE;
 	AVPacket          packet;
 
 	av_register_all();
@@ -49,7 +49,7 @@ bool VideoFileMerge(std::vector<std::string> &input_filename_list, std::vector<i
 
 	double frame_rate = av_q2d(pFormatCtxD->streams[videoStreamIndex]->r_frame_rate);
 	int64_t frame_total_num = frame_rate * pFormatCtxD->duration / AV_TIME_BASE;
-	int frame_num = frame_total_num - offsets[0];
+	int frame_num = (int)(frame_total_num - offsets[0]);
 
 	// 5. set encoder...
 	AVStream *in_stream, *out_stream;
@@ -173,7 +173,7 @@ bool VideoFileMerge(std::vector<std::string> &input_filename_list, std::vector<i
 
 				frame_rate = av_q2d(pFormatCtxD->streams[videoStreamIndex]->r_frame_rate);
 				frame_total_num = frame_rate * pFormatCtxD->duration / AV_TIME_BASE;
-				frame_num = frame_total_num - offsets[open_video_num];
+				frame_num = (int)(frame_total_num - offsets[open_video_num]);
 
 				video_frame_count = 0;
 				base_pts_audio = next_pts_audio;
