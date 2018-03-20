@@ -2,6 +2,7 @@
 #define VIDEO_FILE_MERGE_H_
 
 #include <string>
+#include <vector>
 
 #ifdef __cplusplus
 extern "C" {
