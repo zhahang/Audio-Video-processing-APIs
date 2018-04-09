@@ -1,7 +1,7 @@
 # Audio-Video-processing-APIs
 Some audio and video processing interface
 
-Based on FFmpeg 2.7
+Please use FFmpeg 2.7 or later
 
 1.VideoRemuxer
 
