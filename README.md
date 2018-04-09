@@ -26,3 +26,10 @@ Based on FFmpeg 2.7
 	files:
 		src/VideoFileCut.h
 		src/VideoFileCut.cpp
+4.VideoEncryption
+
+	Description:
+		Encrypt and decrypt video files.
+	files:
+		src/VideoEncryptioner.h
+		src/VideoEncryptioner.cpp
