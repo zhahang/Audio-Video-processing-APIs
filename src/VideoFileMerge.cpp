@@ -1,4 +1,35 @@
 ﻿#include "VideoFileMerge.h"
+#include <iostream>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
+#include <libswscale/swscale.h>
+#include <libavcodec/avcodec.h>
+#include <libavfilter/avfilter.h>
+#include <libavformat/avformat.h>
+#include <libavutil/mathematics.h>
+#include <libavutil/avutil.h>
+#include <libavutil/imgutils.h>
+#include <libavfilter/buffersrc.h>
+#include <libavfilter/buffersink.h>
+#include <libavfilter/avfiltergraph.h>
+#include <libswresample/swresample.h>
+    
+#ifdef __cplusplus
+}
+#endif
+
+
+bool VideoFileMergeDefault(std::vector<std::string> &input_filename_list,
+                    std::string &output_filename)
+{
+    std::vector<int> offset_vec;
+    for (int i = 0; i < input_filename_list.size(); i++)
+        offset_vec.push_back(0);
+    return VideoFileMerge(input_filename_list, offset_vec, output_filename);
+}
 
 
 bool VideoFileMerge(std::vector<std::string> &input_filename_list, std::vector<int> &offsets,
@@ -10,7 +41,7 @@ bool VideoFileMerge(std::vector<std::string> &input_filename_list, std::vector<i
 
 	// 2. init encoder...
 	AVFormatContext  *pFormatCtxE;
-// 	AVStream         *pStreamE;
+//    AVStream         *pStreamE;
 	AVPacket          packet;
 
 	av_register_all();
@@ -54,7 +85,10 @@ bool VideoFileMerge(std::vector<std::string> &input_filename_list, std::vector<i
 	// 5. set encoder...
 	AVStream *in_stream, *out_stream;
 	pFormatCtxE = NULL;
-	avformat_alloc_output_context2(&pFormatCtxE, NULL, NULL, output_filename.c_str());
+	int ret = avformat_alloc_output_context2(&pFormatCtxE, NULL, NULL, output_filename.c_str());
+    if(ret < 0){
+        std::cout << "avformat_alloc_output_context2 Failed!" << std::endl;
+    }
 	if (!pFormatCtxE)
 	{
 		std::cout << "Open Error" << std::endl;
@@ -125,7 +159,7 @@ bool VideoFileMerge(std::vector<std::string> &input_filename_list, std::vector<i
 	while (!finish_flag)
 	{
 		// decoding...
-		if (video_frame_count >= frame_num || av_read_frame(pFormatCtxD, &packet) < 0)
+		if (video_frame_count >= frame_num|| av_read_frame(pFormatCtxD, &packet) < 0)
 		{
 			std::cout << "Add " << video_frame_count << " frames from " << input_filename_list[open_video_num].c_str()
 				<< ",idx=" << open_video_num << std::endl;
@@ -204,8 +238,8 @@ bool VideoFileMerge(std::vector<std::string> &input_filename_list, std::vector<i
 
 		if (packet.stream_index == videoStreamIndex)
 		{
-			if(video_frame_count == 0 && packet.dst < 0)
-				packet.dst = 0;
+            if(video_frame_count == 0 && packet.dts < 0)
+                packet.dts = 0;
 			packet.pts += base_pts_video;
 			packet.dts += base_pts_video;
 			video_frame_count++;

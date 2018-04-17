@@ -1,5 +1,19 @@
 ﻿#include "VideoRemuxer.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
+#include "libswscale/swscale.h"
+#include "libavformat/avformat.h"
+#include "libswresample/swresample.h"
+    
+#ifdef __cplusplus
+}
+#endif
+
+using namespace std;
+
 
 bool VideoRemuxerEncode(string &video_name, string &audio_name, int offset, string &output_video_name)
 {
@@ -515,31 +529,33 @@ bool VideoRemuxer(string &in_filename_v, string &in_filename_a, int offset, stri
 	//Input  
 	if ((ret = avformat_open_input(&ifmt_ctx_v, in_filename_v.c_str(), 0, 0)) < 0) {
 		printf("Could not open input file.");
-		goto end;
+		goto _END_REMUXER;
 	}
 	if ((ret = avformat_find_stream_info(ifmt_ctx_v, 0)) < 0) {
 		printf("Failed to retrieve input stream information");
-		goto end;
+		goto _END_REMUXER;
 	}
 
 	if ((ret = avformat_open_input(&ifmt_ctx_a, in_filename_a.c_str(), 0, 0)) < 0) {
 		printf("Could not open input file.");
-		goto end;
+		goto _END_REMUXER;
 	}
 	if ((ret = avformat_find_stream_info(ifmt_ctx_a, 0)) < 0) {
 		printf("Failed to retrieve input stream information");
-		goto end;
+		goto _END_REMUXER;
 	}
+#ifdef _ZH_DEBUG
 	printf("===========Input Information==========\n");
 	av_dump_format(ifmt_ctx_v, 0, in_filename_v.c_str(), 0);
 	av_dump_format(ifmt_ctx_a, 0, in_filename_a.c_str(), 0);
 	printf("======================================\n");
+#endif
 	//Output  
 	avformat_alloc_output_context2(&ofmt_ctx, NULL, NULL, out_filename.c_str());
 	if (!ofmt_ctx) {
 		printf("Could not create output context\n");
 		ret = AVERROR_UNKNOWN;
-		goto end;
+		goto _END_REMUXER;
 	}
 	ofmt = ofmt_ctx->oformat;
 
@@ -552,13 +568,13 @@ bool VideoRemuxer(string &in_filename_v, string &in_filename_a, int offset, stri
 			if (!out_stream) {
 				printf("Failed allocating output stream\n");
 				ret = AVERROR_UNKNOWN;
-				goto end;
+				goto _END_REMUXER;
 			}
 			videoindex_out = out_stream->index;
 			//Copy the settings of AVCodecContext  
 			if (avcodec_copy_context(out_stream->codec, in_stream->codec) < 0) {
 				printf("Failed to copy context from input to output stream codec context\n");
-				goto end;
+				goto _END_REMUXER;
 			}
 			out_stream->codec->codec_tag = 0;
 			if (ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
@@ -576,13 +592,13 @@ bool VideoRemuxer(string &in_filename_v, string &in_filename_a, int offset, stri
 			if (!out_stream) {
 				printf("Failed allocating output stream\n");
 				ret = AVERROR_UNKNOWN;
-				goto end;
+				goto _END_REMUXER;
 			}
 			audioindex_out = out_stream->index;
 			//Copy the settings of AVCodecContext  
 			if (avcodec_copy_context(out_stream->codec, in_stream->codec) < 0) {
 				printf("Failed to copy context from input to output stream codec context\n");
-				goto end;
+				goto _END_REMUXER;
 			}
 			out_stream->codec->codec_tag = 0;
 			if (ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
@@ -591,47 +607,50 @@ bool VideoRemuxer(string &in_filename_v, string &in_filename_a, int offset, stri
 			break;
 		}
 	}
-
+#ifdef _ZH_DEBUG
 	printf("==========Output Information==========\n");
 	av_dump_format(ofmt_ctx, 0, out_filename.c_str(), 1);
 	printf("======================================\n");
+#endif
 	//Open output file  
 	if (!(ofmt->flags & AVFMT_NOFILE)) {
 		if (avio_open(&ofmt_ctx->pb, out_filename.c_str(), AVIO_FLAG_WRITE) < 0) {
-			printf("Could not open output file '%s'", out_filename);
-			goto end;
+			printf("Could not open output file '%s'", out_filename.c_str());
+			goto _END_REMUXER;
 		}
 	}
 	//Write file header  
 	if (avformat_write_header(ofmt_ctx, NULL) < 0) {
 		printf("Error occurred when opening output file\n");
-		goto end;
+		goto _END_REMUXER;
 	}
+    
 	//skip offset frame
-	int skip_frame_count = 0;
-	int64_t base_pts_a = 0;
-	int64_t base_dts_a = 0;
-	int duration_a = 0;
-	while (true)
-	{
+    int skip_frame_count;
+	int64_t base_pts_a;
+	int64_t base_dts_a;
+	int64_t duration_a;
+    skip_frame_count = 0;
+    base_pts_a = 0;
+    base_dts_a = 0;
+    duration_a = 0;
+
+    while(true){
 		if(skip_frame_count >= offset)
 			break;
-		if (av_read_frame(ifmt_ctx_a, &pkt) < 0)
-		{
-			av_free_packet(&pkt);
+		if (av_read_frame(ifmt_ctx_a, &pkt) < 0){
+            av_packet_unref(&pkt);
 			break;
 		}
-		if (pkt.stream_index == videoindex_v) 
-		{
+		if (pkt.stream_index == videoindex_v) {
 			skip_frame_count++;
 		}
-		else if (pkt.stream_index == audioindex_a)
-		{
+		else if (pkt.stream_index == audioindex_a){
 			base_pts_a = pkt.pts;
 			base_dts_a = pkt.dts;
 			duration_a = pkt.duration;
 		}
-		av_free_packet(&pkt);
+		av_packet_unref(&pkt);
 	}
 	base_pts_a += duration_a;
 	base_dts_a += duration_a;
@@ -644,7 +663,7 @@ bool VideoRemuxer(string &in_filename_v, string &in_filename_a, int offset, stri
 	AVBitStreamFilterContext* aacbsfc = av_bitstream_filter_init("aac_adtstoasc");
 #endif  
 
-	while (1) {
+	while (true) {
 		AVFormatContext *ifmt_ctx;
 		int stream_index = 0;
 		AVStream *in_stream, *out_stream;
@@ -680,6 +699,7 @@ bool VideoRemuxer(string &in_filename_v, string &in_filename_a, int offset, stri
 				} while (av_read_frame(ifmt_ctx, &pkt) >= 0);
 			}
 			else {
+                av_packet_unref(&pkt);
 				break;
 			}
 
@@ -727,6 +747,7 @@ bool VideoRemuxer(string &in_filename_v, string &in_filename_a, int offset, stri
 				} while (av_read_frame(ifmt_ctx, &pkt) >= 0);
 			}
 			else {
+                av_packet_unref(&pkt);
 				break;
 			}
 
@@ -745,11 +766,13 @@ bool VideoRemuxer(string &in_filename_v, string &in_filename_a, int offset, stri
 			pkt.pos = -1;
 			pkt.stream_index = stream_index;
 		}
-
+#ifdef _ZH_DEBUG
 		printf("Write 1 Packet. size:%5d\tpts:%lld\n", pkt.size, pkt.pts);
+#endif
 		//Write  
 		if (av_interleaved_write_frame(ofmt_ctx, &pkt) < 0) {
 			printf("Error muxing packet\n");
+            av_packet_unref(&pkt);
 			break;
 		}
 		av_free_packet(&pkt);
@@ -765,7 +788,7 @@ bool VideoRemuxer(string &in_filename_v, string &in_filename_a, int offset, stri
 	av_bitstream_filter_close(aacbsfc);
 #endif  
 
-end:
+_END_REMUXER:
 	avformat_close_input(&ifmt_ctx_v);
 	avformat_close_input(&ifmt_ctx_a);
 	/* close output */

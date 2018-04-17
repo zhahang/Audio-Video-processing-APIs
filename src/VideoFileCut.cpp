@@ -1,5 +1,17 @@
 ﻿#include "VideoFileCut.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
+#include "libavformat/avformat.h"
+    
+#ifdef __cplusplus
+}
+#endif
+
+using namespace std;
+
 
 bool VideoFileCut(std::string& input_filename, std::string& output_filename,
 	int start_frame, int end_frame, int *offset)
@@ -14,7 +26,7 @@ bool VideoFileCut(std::string& input_filename, std::string& output_filename,
 
 	// 2. init encoder...
 	AVFormatContext  *pFormatCtxE;
-	AVStream         *pStreamE;
+//    AVStream         *pStreamE;
 
 	av_register_all();
 
@@ -54,7 +66,7 @@ bool VideoFileCut(std::string& input_filename, std::string& output_filename,
 	AVRational video_frame_rate = pFormatCtxD->streams[videoStreamIndex]->r_frame_rate;
 	AVRational video_time_base = pFormatCtxD->streams[videoStreamIndex]->time_base;
 	int64_t video_first_dts = pFormatCtxD->streams[videoStreamIndex]->first_dts;
-	double frame_rate = av_q2d(video_frame_rate);
+//    double frame_rate = av_q2d(video_frame_rate);
 
 	// 5. resaving...
 	AVStream *in_stream, *out_stream;
@@ -113,7 +125,7 @@ bool VideoFileCut(std::string& input_filename, std::string& output_filename,
 	}
 
 	// find nearest key frame...
-	int pre = 0;
+//    int pre = 0;
 	int64_t seek_nearest_key_before = -1;
 	int64_t nearest_key_end = -1;
 	bool find_key_flag = true;
@@ -138,20 +150,22 @@ bool VideoFileCut(std::string& input_filename, std::string& output_filename,
 
 		if (av_read_frame(pFormatCtxD, &packet) < 0)
 		{
-			av_free_packet(&packet);
+//            av_free_packet(&packet);
+            av_packet_unref(&packet);
 			avformat_close_input(&pFormatCtxE);
 			break;
 		}
 
 		if (packet.stream_index == videoStreamIndex)
 		{
-			frame_id = packet.pts / packet.duration;//current video frame number?
+			frame_id = (int)packet.pts / packet.duration;//current video frame number?
 
 			if (!find_key_flag)
 			{
 				if (frame_id > start_frame)
 				{
-					av_free_packet(&packet);
+//                    av_free_packet(&packet);
+                    av_packet_unref(&packet);
 					continue;
 				}
 				find_key_flag = true;
@@ -161,17 +175,20 @@ bool VideoFileCut(std::string& input_filename, std::string& output_filename,
 			{
 				if (frame_id > start_frame)
 				{
-					av_free_packet(&packet);
+//                    av_free_packet(&packet);
+                    av_packet_unref(&packet);
 					continue;
 				}
 				seek_nearest_key_before = packet.pts;
 				*offset = start_frame - frame_id;
 				nearest_key_end = packet.duration * end_frame;
-				av_free_packet(&packet);
+//                av_free_packet(&packet);
+                av_packet_unref(&packet);
 				break;
 			}
 		}
-		av_free_packet(&packet);
+//        av_free_packet(&packet);
+        av_packet_unref(&packet);
 	}
 
 	if (seek_nearest_key_before == -1)
@@ -211,13 +228,15 @@ bool VideoFileCut(std::string& input_filename, std::string& output_filename,
 	{
 		if (av_read_frame(pFormatCtxD, &packet) < 0)
 		{
-			av_free_packet(&packet);
+//            av_free_packet(&packet);
+            av_packet_unref(&packet);
 			break;
 		}
 
 		if (packet.stream_index != videoStreamIndex && packet.stream_index != audioStreamIndex)
 		{
-			av_free_packet(&packet);
+//            av_free_packet(&packet);
+            av_packet_unref(&packet);
 			continue;
 		}
 
@@ -229,7 +248,8 @@ bool VideoFileCut(std::string& input_filename, std::string& output_filename,
 			}
 			else
 			{
-				av_free_packet(&packet);
+//                av_free_packet(&packet);
+                av_packet_unref(&packet);
 				continue;
 			}
 		}
@@ -240,7 +260,8 @@ bool VideoFileCut(std::string& input_filename, std::string& output_filename,
 			if (curr_count >= target_count)
 			{
 				finish_cut = true;
-				av_free_packet(&packet);
+//                av_free_packet(&packet);
+                av_packet_unref(&packet);
 				continue;
 			}
 		}
@@ -261,7 +282,7 @@ bool VideoFileCut(std::string& input_filename, std::string& output_filename,
 			packet.pts -= video_base_pts;
 			packet.dts -= video_base_pts;
 			curr_count++;
-			(*out_duration)++;
+//            (*out_duration)++;
 		}
 		else if (packet.stream_index == audioStreamIndex)
 		{
@@ -275,11 +296,13 @@ bool VideoFileCut(std::string& input_filename, std::string& output_filename,
 		}
 		else
 		{
-			av_free_packet(&packet);
+//            av_free_packet(&packet);
+            av_packet_unref(&packet);
 			continue;
 		}
 		av_interleaved_write_frame(pFormatCtxE, &packet);
-		av_free_packet(&packet);
+//        av_free_packet(&packet);
+        av_packet_unref(&packet);
 	}
 
 	av_write_trailer(pFormatCtxE);
