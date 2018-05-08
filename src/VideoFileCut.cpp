@@ -99,6 +99,24 @@ bool VideoFileCut(std::string& input_filename, std::string& output_filename,
 			avformat_free_context(pFormatCtxE);
 			return false;
 		}
+        
+        //save video rotate info
+        if(pFormatCtxD->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO){
+            AVDictionaryEntry *item = NULL;
+            item = av_dict_get(in_stream->metadata, "rotate", item, 0);
+            const char *rotate = NULL;
+            if(item == NULL){
+                rotate = NULL;
+            }else{
+                string value = item->value;
+                rotate = value.c_str();
+            }
+            
+            int ret = av_dict_set(&out_stream->metadata, "rotate", rotate, 0);
+            if(ret < 0){
+                printf("save video rotate info failed \n");
+            }
+        }
 
 		if (!out_stream)
 		{

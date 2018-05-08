@@ -33,7 +33,7 @@ namespace ZH {
             mSwsCtx = NULL;
         }
         if(mPacket != NULL){
-            av_packet_unref(mPacket);
+//            av_packet_unref(mPacket);
             av_free(mPacket);
             mPacket = NULL;
         }
