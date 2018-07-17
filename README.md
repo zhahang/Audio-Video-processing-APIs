@@ -1,7 +1,7 @@
 # Audio-Video-processing-APIs
 Some audio and video processing interface
-
-Please use FFmpeg 2.7 or later
+Base on FFmpeg
+Please use FFmpeg 3.0 or later
 
 1.VideoRemuxer
 
@@ -33,3 +33,4 @@ Please use FFmpeg 2.7 or later
 	files:
 		src/VideoEncryptioner.h
 		src/VideoEncryptioner.cpp
+...
